@@ -1,0 +1,2173 @@
+---
+title: "2022 KDHS Tables 7 Visuals"
+author: "Makini"
+date: "2023-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, include=FALSE}
+#load packages
+require(pacman)
+p_load(docxtractr)
+p_load(dplyr)
+p_load(tidyverse)
+p_load(ggiraph)
+p_load(plotly)
+
+#import the tables
+data_tables <- read_docx("cht4-9tables.docx")
+
+#number of tables in the document
+docx_tbl_count(data_tables)
+tables <- docx_extract_all_tbls(data_tables, guess_header = T, trim = T)
+
+setwd("~/CEMA/KNBS/2022 KDHS DATA/Visuals Tables 7&8")
+```
+
+```{r, include=FALSE}
+#read the 7.1
+#women and men total - any method===
+wmomen_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(6) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Women")
+mwomen_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(6) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Men")
+#any modern method
+mod_Women_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(8) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Women")
+mod_men_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(8) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Men")
+
+mwknowledge_of_contraceptive_methods <- bind_rows(wmomen_knowledge_of_contraceptive_methods, mwomen_knowledge_of_contraceptive_methods, mod_Women_knowledge_of_contraceptive_methods, mod_men_knowledge_of_contraceptive_methods) %>% # gather the percentage column and type together
+  gather(type,percentage,2:4)
+write_csv(mwknowledge_of_contraceptive_methods, "7_1_all.csv")
+```
+
+```{r, include=FALSE}
+methods_visuals <- read.csv("7_1_all.csv") %>% # mutate and recode the first row
+  mutate(method = recode(method, "Any method" = "Any", "Any modern method" = "Modern"))
+  
+method_visuals <- methods_visuals %>% 
+  ggplot(aes(x = method, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.3, size=3, color="black") +
+  coord_flip() +
+  ylab("Percentage %") + xlab("Method") +
+  facet_grid(type~gender) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 8, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.2))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Knowledge of Contraceptive Methods")
+method_visuals <- ggplotly(method_visuals, tooltip = c("method", "percentage"))
+```
+
+```{r}
+method_visuals
+```
+
+```{r, include=FALSE}
+#specific modern methods
+spec_mod_Women_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(10:21) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Women")
+spec_mod_men_knowledge_of_contraceptive_methods <- tables[[31]] %>%
+  slice(10:21) %>% 
+  select(V1:V4) %>% 
+  rename(method = V1,
+                all = V2,
+                currently_married = V3, 
+                sexually_active = V4
+         ) %>% mutate(gender = "Men")
+spec_mod_knowledge_of_contraceptive_methods <- bind_rows(spec_mod_Women_knowledge_of_contraceptive_methods, spec_mod_men_knowledge_of_contraceptive_methods) %>% # gather the percentage column and type together
+  gather(type,percentage,2:4)
+
+write_csv(spec_mod_knowledge_of_contraceptive_methods, "knowledge_contraceptives.csv")
+```
+
+```{r, include=FALSE}
+contraceptive_knowledge <- read_csv("knowledge_contraceptives.csv")
+
+contraceptive_knowledge_visuals <- contraceptive_knowledge %>% 
+  ggplot(aes(x = method, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.3, size=2, color="black") +
+  coord_flip() +
+  ylab("Percentage %") + xlab("Method") +
+  facet_grid(gender~type) +
+  theme(strip.text.x = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.background =element_rect(fill="white")) +
+  theme(axis.title=element_text(face="bold"), axis.text = element_text(face = "bold")) +
+  ggtitle("Knowledge of Specific Modern Contraceptive Methods")
+contraceptive_knowledge_visuals <- ggplotly(contraceptive_knowledge_visuals, tooltip = c("method", "percentage"))
+```
+
+```{r}
+contraceptive_knowledge_visuals
+```
+
+```{r, include=FALSE}
+# 1. age
+wage_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(7:13) %>% 
+  select(V1:V3) %>% 
+  rename(age = V1,
+                Any = V2,
+                Any_modern = V3
+         )  %>% 
+  gather(type,percentage,2:3) %>% 
+  mutate( gender = "Women")
+write_csv(wage_knowledge_of_contraceptive_methods, "women_age_contraceptive_knowledge.csv")
+
+mage_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(7:13) %>% 
+  select(V1, V5:V6) %>% 
+  rename(age = V1,
+                Any = V5,
+                Any_modern = V6
+         )  %>% 
+  gather(type,percentage,2:3)%>% 
+  mutate( gender = "Men")
+write_csv(wage_knowledge_of_contraceptive_methods, "men_age_contraceptive_knowledge.csv")
+#bind rows
+age_knowledge_of_contraceptive_methods <- bind_rows(wage_knowledge_of_contraceptive_methods, mage_knowledge_of_contraceptive_methods) 
+#write to csv
+#write_csv(age_knowledge_of_contraceptive_methods, "combined_age_contraceptive_knowledge.csv")
+```
+
+```{r, include=FALSE}
+age_contraceptive_knowledge <- read.csv("combined_age_contraceptive_knowledge.csv")
+
+visuals_age <- age_contraceptive_knowledge %>% 
+  ggplot(aes(x=age, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "darkorange") +
+  theme_bw() +
+  facet_grid(type~gender) +
+  xlab("Age") + ylab("Percentage %") +
+  coord_flip() +
+  geom_text(aes(label=percentage), hjust=1.3, size=5, color="black") +
+  ggtitle("Knowledge of Any Contraceptive Methods by Age")+
+  theme(axis.title=element_text(size=16, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5)))
+visuals_age <- ggplotly(visuals_age, tooltip = c("age", "percentage"))
+```
+
+```{r}
+visuals_age
+```
+
+
+```{r, include=FALSE}
+# 2. residence
+wresidence_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(16:17) %>% 
+  select(V1:V4) %>% 
+  rename(residence = V1,
+                any = V2,
+                any_modern = V3, 
+                number = V4
+         ) %>% mutate(gender = "Women")
+
+mresience_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(16:17) %>% 
+  select(V1, V5:V7) %>% 
+  rename(residence = V1,
+                any = V5,
+                any_modern = V6, 
+                number = V7
+         ) %>% mutate(gender = "Men")
+#bind rows
+residence_knowledge_of_contraceptive_methods <- bind_rows(wresidence_knowledge_of_contraceptive_methods, mresience_knowledge_of_contraceptive_methods)
+#write to csv
+write_csv(residence_knowledge_of_contraceptive_methods, "residence_contraceptives.csv")
+```
+
+```{r, include=FALSE}
+residence_contraceptives <- read.csv("residence_contraceptives.csv")
+
+residence_contraceptives_visuals <- residence_contraceptives %>% 
+  ggplot(aes(x=residence, y=any)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "darkorange") +
+  theme_bw() +
+  facet_wrap(~gender) +
+  xlab("Residence") + ylab("Percentage") +
+  coord_flip() +
+  geom_text(aes(label=any), hjust=1.3, size=5, color="black") +
+  ggtitle("Knowledge of Any Contraceptive Methods by Residence")
+```
+
+```{r}
+residence_contraceptives_visuals
+```
+
+
+```{r, include=FALSE}
+# 3. education
+weducation_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(20:23) %>% 
+  select(V1:V4) %>% 
+  rename(education = V1,
+                any = V2,
+                any_modern = V3, 
+                number = V4
+         ) %>% mutate(gender = "Women")
+
+meducation_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(20:23) %>% 
+  select(V1, V5:V7) %>% 
+  rename(education = V1,
+                any = V5,
+                any_modern = V6, 
+                number = V7
+         ) %>% mutate(gender = "Men")
+#bind rows
+education_knowledge_of_contraceptive_methods <- bind_rows(weducation_knowledge_of_contraceptive_methods, meducation_knowledge_of_contraceptive_methods)
+#write to csv
+write_csv(education_knowledge_of_contraceptive_methods, "education_contraceptives.csv")
+```
+
+```{r, include=FALSE}
+education_contraceptives <- read.csv("education_contraceptives.csv")
+
+education_contraceptives_visuals <- education_contraceptives %>% 
+  ggplot(aes(x=any, y=education)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "orange") +
+  facet_grid(~gender) +
+  geom_text(aes(label=any), hjust=1.3, size=5, color="black") +
+  xlab("Percentage %") + ylab("Education Level") +
+  theme(strip.text.y = element_text(size = 14, color = "black", face = "bold")) +
+  theme(axis.text = element_text(face = "bold", size = rel(1.2))) +
+  ggtitle("Knowledge of Any Contraceptive Methods By Education Level")
+```
+
+```{r}
+education_contraceptives_visuals
+```
+
+```{r, include=FALSE}
+# 4. wealth-quantile - eliminate
+wwealth_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(26:30) %>% 
+  select(V1:V4) %>% 
+  rename(wealth = V1,
+                any = V2,
+                any_modern = V3, 
+                number = V4
+         ) %>% mutate(gender = "Women")
+
+mwealth_knowledge_of_contraceptive_methods <- tables[[32]] %>%
+  slice(26:30) %>% 
+  select(V1, V5:V7) %>% 
+  rename(wealth = V1,
+                any = V5,
+                any_modern = V6, 
+                number = V7
+         ) %>% mutate(gender = "Men")
+#bind rows
+wealth_knowledge_of_contraceptive_methods <- bind_rows(wwealth_knowledge_of_contraceptive_methods, mwealth_knowledge_of_contraceptive_methods)
+#write to csv
+write_csv(wealth_knowledge_of_contraceptive_methods, "wealth_contraceptives.csv")
+```
+
+```{r, include=FALSE}
+wealth_contraceptives <- read.csv("wealth_contraceptives.csv") %>%
+  mutate(wealth = fct_relevel(wealth, "Lowest","Second", "Middle","Fourth","Highest"))
+
+wealth_contraceptives_visuals <- wealth_contraceptives %>% 
+  ggplot(aes(x=any, y=wealth)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_wrap(~gender) +
+  geom_text(aes(label = any), hjust=1.3, size=4, color="white") +
+  xlab("Percentage %") + ylab("Wealth Quintile") +
+  ggtitle("Knowledge of Any Contraceptive Methods by Wealth Quintile")
+```
+
+```{r}
+wealth_contraceptives_visuals
+```
+
+```{r, include=FALSE}
+knowledge_of_fertile_period <- tables[[41]] %>%
+  slice(5:11) %>% 
+  select(V1:V4) %>% 
+  rename(period = V1,
+                Users_of_rythm_method = V2,
+                Users_of_Standard_day_method = V3, 
+                All_women = V4
+         ) %>% 
+  gather(character, percentage, 2:4) 
+#write to csv
+write_csv(knowledge_of_fertile_period, "knowledge_fertile_period.csv")
+```
+
+```{r, include=FALSE}
+fertile_period <- read.csv("knowledge_fertile_period.csv") %>% mutate(period = fct_relevel(period, "Just before her menstrual period begins", "During her menstrual period", "Right after her menstrual period has ended", "	
+Halfway between two menstrual periods", "Other", "No specific time", "Don't know"))
+
+fertile_period_visuals <- fertile_period %>% 
+  ggplot(aes(x=percentage, y=period, fill = character, type = "l", xaxt = "n")) +
+  geom_col(stat = "identity") +
+  scale_x_continuous(labels = NULL) +
+  ggtitle("Knowledge of Fertile Period") +
+  xlab("Percentage %") + ylab("Fertile Period") +
+  theme(axis.title.y = element_text(size = 16, colour = "black", face = "bold", hjust = 0))
+fertile_period_visuals <- ggplotly(fertile_period_visuals, tooltip = c("percentage", "period"))
+```
+
+```{r}
+fertile_period_visuals
+```
+
+```{r, include=FALSE}
+# Table 7.9 Knowledge of fertile period by age
+
+age_knowledge_of_fertility_period <- tables[[42]] %>%
+  slice(5:11) %>% 
+  select(V1:V3) %>% 
+  rename(age = V1,
+                percentage = V2,
+                number_of_women = V3
+         )
+#write to csv
+write_csv(age_knowledge_of_fertility_period, "fertile_period_age.csv")
+```
+
+```{r, include=FALSE}
+age_fertility_period <- read.csv("fertile_period_age.csv")
+
+agefertilityperiodvisuals <- age_fertility_period %>% 
+  ggplot(aes(x=age, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  geom_text(aes(label = percentage), hjust=0.5, vjust=1.5, size=4, color="white") +
+  ggtitle("Knowledge of Fertile Period by Age") 
+```
+
+```{r}
+agefertilityperiodvisuals
+```
+
+
+
+```{r, include=FALSE}
+# table 7.14 - reason for discontinuation
+reason_for_discontinuation <- tables[[47]] %>%
+  slice(5:20) %>% # by age of woman
+  dplyr::select(V1:V6, V8:V13) %>%
+  dplyr::rename(Reason = V1,
+                IUD = V2,
+                Injectables = V3, 
+                Implants = V4,
+                Pill = V5,
+                male_condom = V6,
+                emergency_contraception = V8,
+                SDM = V9,
+                rythm = V10,
+                withdrawal = V11,
+                other = V12,
+                all_methods = V13)  %>%
+   pivot_longer(!Reason, names_to= "Method", values_to = "Percent") 
+# write csv
+#write_csv(reason_for_discontinuation, "reason_for_discontinuation.csv")
+```
+
+```{r, include=FALSE}
+reason_for_discontinuation <- read.csv("reason_for_discontinuation.csv")
+
+reason_for_discontination_visuals <- reason_for_discontinuation %>% 
+  ggplot(aes(x=Method, y=Percent)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_wrap(~Reason) +
+  coord_flip()+
+  ggtitle("Reason for Discontinuation of Family Planning Method") +
+  geom_text(aes(label = Percent), hjust=1.3, size=2, color="white") 
+reason_for_discontination_visuals <- ggplotly(reason_for_discontination_visuals, tooltip = c("Method", "Percent"))
+```
+
+```{r}
+reason_for_discontination_visuals
+```
+
+```{r, include=FALSE}
+# 1. unmet need
+age_unmet_need_and_demand_fp <- tables[[48]] %>%
+  slice(6:12) %>% 
+  select(V1:V4) %>% 
+  rename(age = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+age_met_need_and_demand_fp <- tables[[48]] %>%
+  slice(6:12) %>% 
+  select(V1, V5:V7) %>% 
+  rename(age = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+age_total_demand <- tables[[48]] %>%
+  slice(6:12) %>% 
+  select(V1, V8:V10) %>% 
+  rename(age = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+age_need_and_demand_fp <- bind_rows(age_unmet_need_and_demand_fp, age_met_need_and_demand_fp,  age_total_demand ) %>% 
+  gather(type, percentage, 2:4)
+# write csv
+write_csv(age_need_and_demand_fp, "age_need_and_demand_fp.csv")
+```
+
+visualize age
+```{r, include=FALSE}
+ageneed_demand <- read.csv("age_need_and_demand_fp.csv")
+my_table <- ageneed_demand[ageneed_demand$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+ageneed_demand_visuals <- my_table2 %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold", hjust = 0), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Age, Among Married Women") + xlab("Age") + ylab("Percentage")
+ageneed_demand_visuals <- ggplotly(ageneed_demand_visuals, tooltip = c("age", "percentage"))
+```
+
+```{r}
+ageneed_demand_visuals
+```
+
+percentage 
+```{r, include=FALSE}
+#percentage of demand satisfied
+age_percentage_demand_satisfied <- tables[[48]] %>%
+  slice(6:12) %>% 
+  select(V1, V12, V13) %>% 
+  rename(age = V1, 
+         satisfied = V12, 
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+write_csv(age_percentage_demand_satisfied, "age_percentage_demand_satisfied.csv")
+```
+
+```{r, include=FALSE}
+age_percentage_demand_satisfied <- read.csv("age_percentage_demand_satisfied.csv")
+
+age_percentage_visuals <- age_percentage_demand_satisfied %>% 
+  ggplot(aes(x=age, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Percentage of Women Satisfied by FP Methods, by Age")
+```
+
+```{r}
+age_percentage_visuals
+```
+
+```{r, include=FALSE}
+############
+residence_unmet_need_and_demand_fp <- tables[[48]] %>%
+  slice(15:16) %>% 
+  select(V1:V4) %>% 
+  rename(residence = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+residence_met_need_and_demand_fp <- tables[[48]] %>%
+  slice(15:16) %>% 
+  select(V1, V5:V7) %>% 
+  rename(residence = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+residence_total_demand <- tables[[48]] %>%
+  slice(15:16) %>% 
+  select(V1, V8:V10) %>% 
+  rename(residence = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+residence_need_and_demand_fp <- bind_rows(residence_unmet_need_and_demand_fp, residence_met_need_and_demand_fp, residence_total_demand ) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(residence_need_and_demand_fp, "residence_need_and_demand_fp.csv")
+```
+
+```{r, include=FALSE}
+residenceneed_demand <- read.csv("residence_need_and_demand_fp.csv")
+my_table <- residenceneed_demand[residenceneed_demand$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+residenceneed_demand_visuals <- my_table2 %>% 
+  ggplot(aes(x = need, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~residence) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Residence, Among Married Women") + xlab("Residence") + ylab("Percentage")
+```
+
+```{r}
+residenceneed_demand_visuals
+```
+
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+residence_percentage_demand_satisfied <- tables[[48]] %>%
+  slice(15:16) %>% 
+  select(V1, V12, V13) %>% 
+  rename(residence = V1, 
+                satisfied = V12,
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(residence_percentage_demand_satisfied, "residence_percentage_demand_satisfied.csv")
+```
+
+```{r, include=FALSE}
+residence_percentage_demand_satisfied <- read.csv("residence_percentage_demand_satisfied.csv")
+
+residence_percentage_visuals <- residence_percentage_demand_satisfied %>% 
+  ggplot(aes(x=type, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~residence) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Percentage of Women Satisfied by FP Methods, by Residence")
+```
+
+```{r}
+residence_percentage_visuals
+```
+
+```{r, include=FALSE}
+#Education
+education_unmet_need_and_demand_fp <- tables[[48]] %>%
+  slice(19:22) %>% 
+  select(V1:V4) %>% 
+  rename(education = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+education_met_need_and_demand_fp <- tables[[48]] %>%
+  slice(19:22) %>% 
+  select(V1, V5:V7) %>% 
+  rename(education = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+education_total_demand <- tables[[48]] %>%
+  slice(19:22) %>% 
+  select(V1, V8:V10) %>% 
+  rename(education = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+education_need_and_demand_fp <- bind_rows(education_unmet_need_and_demand_fp, education_met_need_and_demand_fp, education_total_demand ) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(education_need_and_demand_fp, "education_need_and_demand_fp.csv")
+```
+
+```{r, include=FALSE}
+education_need_demand <- read.csv("education_need_and_demand_fp.csv")
+my_table <- education_need_demand[education_need_demand$need != "total_demand", ] %>% mutate(education = fct_relevel(education, "	
+No education", "Primary", "Secondary", "More than secondary",))
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+education_need_demand_visuals <- my_table2 %>% 
+  ggplot(aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Education Level, Among Married Women") + xlab("Education Level") + ylab("Percentage")
+```
+
+```{r}
+education_need_demand_visuals
+```
+
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+education_percentage_demand_satisfied <- tables[[48]] %>%
+  slice(19:22) %>% 
+  select(V1, V12, V13) %>% 
+  rename(education = V1, 
+                satisfied = V12,
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(education_percentage_demand_satisfied, "education_percentage_demand_satisfied.csv")
+```
+
+```{r, include=FALSE}
+education_percentage_demand_satisfied <- read.csv("education_percentage_demand_satisfied.csv")
+
+education_percentage_visuals <- education_percentage_demand_satisfied %>% 
+  ggplot(aes(x=education, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Percentage of Women Satisfied by FP Methods, by Education Level")
+```
+
+```{r}
+education_percentage_visuals
+```
+
+```{r, include=FALSE}
+#WEALTH
+wealth_unmet_need_and_demand_fp <- tables[[48]] %>%
+  slice(25:29) %>% 
+  select(V1:V4) %>% 
+  rename(wealth = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+wealth_met_need_and_demand_fp <- tables[[48]] %>%
+  slice(25:29) %>% 
+  select(V1, V5:V7) %>% 
+  rename(wealth = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+wealth_total_demand <- tables[[48]] %>%
+  slice(25:29) %>% 
+  select(V1, V8:V10) %>% 
+  rename(wealth = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+wealth_need_and_demand_fp <- bind_rows(wealth_unmet_need_and_demand_fp, wealth_met_need_and_demand_fp, wealth_total_demand) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(wealth_need_and_demand_fp, "wealth_need_and_demand_fp.csv")
+```
+
+```{r, include=FALSE}
+wealth_need_demand <- read.csv("wealth_need_and_demand_fp.csv")
+my_table <- wealth_need_demand[wealth_need_demand$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+wealth_need_demand_visuals <- my_table2 %>% 
+  ggplot(aes(x = wealth, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 14, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Wealth Quintile, Among Married Women") + xlab("Wealth Quintile") + ylab("Percentage")
+```
+
+```{r}
+wealth_need_demand_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+wealth_percentage_demand_satisfied <- tables[[48]] %>%
+  slice(25:29) %>% 
+  select(V1, V12, V13) %>% 
+  rename(wealth = V1, 
+                satisfied = V12,
+         satisfied_by_modern = V13
+         )  %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(wealth_percentage_demand_satisfied, "wealth_percentage_demand_satisfied.csv")
+```
+
+```{r, include=FALSE}
+wealth_percentage_demand_satisfied <- read.csv("wealth_percentage_demand_satisfied.csv")
+
+wealth_percentage_visuals <- wealth_percentage_demand_satisfied %>% 
+  ggplot(aes(x=wealth, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Percentage of Women Satisfied by FP Methods, by Wealth Quintile") +xlab("Wealth Quintile")
+```
+
+```{r}
+wealth_percentage_visuals
+```
+
+
+```{r, include=FALSE}
+#7.15.2
+age_unmet_need_unmarried_women_all <- tables[[49]] %>%
+  slice(7:13) %>% 
+  select(V1:V4) %>% 
+  rename(age = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+age_met_need_unmarried_women_all <- tables[[49]] %>%
+  slice(7:13) %>% 
+  select(V1, V5:V7) %>% 
+  rename(age = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+age_total_unmarried_demand_fp_all <- tables[[49]] %>%
+  slice(7:13) %>% 
+  select(V1, V8:V10) %>% 
+  rename(age = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+age_unmarried <- bind_rows(age_unmet_need_unmarried_women_all, age_met_need_unmarried_women_all, age_total_unmarried_demand_fp_all) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(age_unmarried, "age_unmarried.csv")
+```
+
+
+```{r, include=FALSE}
+age_unmarried <- read.csv("age_unmarried.csv")
+my_table <- age_unmarried[age_unmarried$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+age_unmarried_visuals <- my_table2 %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 14, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 10, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold"), axis.text = element_text(face = "bold", size = rel(1.3))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Age, Among All Unmarried Women") + xlab("Age") + ylab("Percentage")
+```
+
+```{r}
+age_unmarried_visuals
+```
+
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+age_percentage_unmarried_demand_satisfied <- tables[[49]] %>%
+  slice(7:13) %>% 
+  select(V1, V12, V13) %>% 
+  rename(age = V1, 
+                satisfied = V12,
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(age_percentage_unmarried_demand_satisfied, "percentage_age.csv")
+```
+
+
+```{r, include=FALSE}
+age_percentage_unmarried <- read.csv("percentage_age.csv")
+
+age_percentage_unmarried_visuals <- age_percentage_unmarried %>% 
+  ggplot(aes(x=age, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("All Unmarried Women Satisfied by FP Methods, by Age")
+```
+
+```{r}
+age_percentage_unmarried_visuals
+```
+
+```{r, include=FALSE}
+###residence
+residence_unmet_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(16:17) %>% 
+  select(V1:V4) %>% 
+  rename(residence = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+residence_met_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(16:17) %>% 
+  select(V1, V5:V7) %>% 
+  rename(residence = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+residence_total_unmarried_demand <- tables[[49]] %>%
+  slice(16:17) %>% 
+  select(V1, V8:V10) %>% 
+  rename(residence = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+residence_unmarried <- bind_rows(residence_unmet_need_unmarried_demand_fp, residence_met_need_unmarried_demand_fp, residence_total_unmarried_demand) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(residence_unmarried, "residence_unmarried.csv")
+```
+
+```{r, include=FALSE}
+residence_unmarried <- read.csv("residence_unmarried.csv")
+my_table <- residence_unmarried[residence_unmarried$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+  
+residence_unmarried_visuals <- my_table2 %>% 
+  ggplot(aes(x = need, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~residence) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Residence, Among All Unmarried Women") + xlab("Residence") + ylab("Percentage")
+```
+
+```{r}
+residence_unmarried_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+residence_percentage_unmarried_demand_satisfied <- tables[[49]] %>%
+  slice(16:17) %>% 
+  select(V1, V12, V13) %>% 
+  rename(residence = V1, 
+                percentage_demand_satisfied = V12,
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(residence_percentage_unmarried_demand_satisfied, "percentage_residence.csv")
+```
+
+
+```{r, include=FALSE}
+residence_percentage_unmarried <- read.csv("percentage_residence.csv")
+
+residence_percentage_unmarried_visuals <- residence_percentage_unmarried %>% 
+  ggplot(aes(x=type, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~residence) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("All Unmarried Women Satisfied by FP Methods, by Residence")
+```
+
+```{r}
+residence_percentage_unmarried_visuals
+```
+
+```{r, include=FALSE}
+#Education
+education_unmet_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(20:23) %>% 
+  select(V1:V4) %>% 
+  rename(education = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+education_met_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(20:23) %>% 
+  select(V1, V5:V7) %>% 
+  rename(education = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+education_total_unmarried_demand <- tables[[49]] %>%
+  slice(20:23) %>% 
+  select(V1, V8:V10) %>% 
+  rename(education = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+education_unmarried <- bind_rows(education_unmet_need_unmarried_demand_fp, education_met_need_unmarried_demand_fp, education_total_unmarried_demand) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(education_unmarried, "education_unmarried.csv")
+```
+
+```{r, include=FALSE}
+education_unmarried <- read.csv("education_unmarried.csv")
+my_table <- education_unmarried[education_unmarried$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+education_unmarried_visuals <- my_table2 %>% 
+  ggplot(aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Education, Among All Unmarried Women") + xlab("Education Level") + ylab("Percentage")
+```
+
+```{r}
+education_unmarried_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+education_percentage_unmarried_demand_satisfied <- tables[[49]] %>%
+  slice(20:23) %>% 
+  select(V1, V12, V13) %>% 
+  rename(education = V1, 
+                percentage_demand_satisfied = V12,
+         satisfied_by_modern_methods = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(education_percentage_unmarried_demand_satisfied, "percentage_education.csv")
+```
+
+```{r, include=FALSE}
+#percentage visuals
+education_percentage_unmarried <- read.csv("percentage_education.csv")
+
+education_percentage_unmarried_visuals <- education_percentage_unmarried %>% 
+  ggplot(aes(x=education, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("All Unmarried Women Satisfied by FP Methods, by Education Level") + xlab("Education Level")
+```
+
+```{r}
+education_percentage_unmarried_visuals
+```
+
+```{r, include=FALSE}
+#WEALTH
+wealth_unmet_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(26:30) %>% 
+  select(V1:V4) %>% 
+  rename(wealth = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+wealth_met_need_unmarried_demand_fp <- tables[[49]] %>%
+  slice(26:30) %>% 
+  select(V1, V5:V7) %>% 
+  rename(wealth = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+wealth_total_unmarried_demand <- tables[[49]] %>%
+  slice(26:30) %>% 
+  select(V1, V8:V10) %>% 
+  rename(wealth = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+wealth_unmarried <- bind_rows(wealth_unmet_need_unmarried_demand_fp, wealth_met_need_unmarried_demand_fp, wealth_total_unmarried_demand) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(wealth_unmarried, "wealth_unmarried.csv")
+```
+
+```{r, include=FALSE}
+wealth_unmarried <- read.csv("wealth_unmarried.csv")
+my_table <- wealth_unmarried[wealth_unmarried$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+wealth_unmarried_visuals <- my_table2 %>% 
+  ggplot(aes(x = wealth, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Wealth Quintile, Among All Unmarried Women") + xlab("Wealth Quintile") + ylab("Percentage")
+```
+
+```{r}
+wealth_unmarried_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+wealth_percentage_unmarried_demand_satisfied <- tables[[49]] %>%
+  slice(26:30) %>% 
+  select(V1, V12, V13) %>% 
+  rename(wealth = V1, 
+                percentage_demand_satisfied = V12,
+         satisfied_by_modern = V13
+         )%>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(wealth_percentage_unmarried_demand_satisfied, "percentage_wealth.csv")
+```
+
+```{r, include=FALSE}
+percentage_wealth <- read.csv("percentage_wealth.csv")
+
+percentage_wealth_visuals <- percentage_wealth %>% 
+  ggplot(aes(x=wealth, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("All Unmarried Women Satisfied by FP Methods, by Wealth Quintile")
+```
+
+```{r}
+percentage_wealth_visuals
+```
+
+```{r, include=FALSE}
+age_unmet_need_SAUW <- tables[[49]] %>%
+  slice(35:41) %>% 
+  select(V1:V4) %>% 
+  rename(age = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+age_met_need_SAUW <- tables[[49]] %>%
+  slice(35:41) %>% 
+  select(V1, V5:V7) %>% 
+  rename(age = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+age_total_SAUW <- tables[[49]] %>%
+  slice(35:41) %>% 
+  select(V1, V8:V10) %>% 
+  rename(age = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+age_sexually_active <- bind_rows(age_unmet_need_SAUW, age_met_need_SAUW, age_total_SAUW) %>% 
+  gather(type, percentage, 2:4)
+
+#write_csv(age_sexually_active, "age_sexually_active.csv")
+```
+
+```{r, include=FALSE}
+age_sexually_active <- read.csv("age_sexually_active.csv")
+my_table <- age_sexually_active[age_sexually_active$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+age_sexually_active_visuals <- my_table2 %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Age - Sexually Active Unmarried Women") + xlab("Age") + ylab("Percentage")
+```
+
+```{r}
+age_sexually_active_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+age_percentage_SAUW <- tables[[49]] %>%
+  slice(35:41) %>% 
+  select(V1, V12, V13) %>% 
+  rename(age = V1, 
+              percentage_demand_satisfied = V12,
+       satisfied_by_modern = V13) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+#write_csv(age_percentage_SAUW, "percentage_sexually_age.csv")
+```
+
+```{r, include=FALSE}
+age_percentage_sexually <- read.csv("percentage_sexually_age.csv")
+
+age_percentage_sexually_visuals <- age_percentage_sexually %>% 
+  ggplot(aes(x=age, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Sexually Active Unmarried Women Satisfied by FP Methods, by Age")
+```
+
+```{r}
+age_percentage_sexually_visuals
+```
+
+```{r, include=FALSE}
+###residence
+############
+residence_unmet_need_SAUW <- tables[[49]] %>%
+  slice(44:45) %>% 
+  select(V1:V4) %>% 
+  rename(residence = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+residence_met_need_SAUW <- tables[[49]] %>%
+  slice(44:45) %>% 
+  select(V1, V5:V7) %>% 
+  rename(residence = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+residence_total_SAUW <- tables[[49]] %>%
+  slice(44:45) %>% 
+  select(V1, V8:V10) %>% 
+  rename(residence = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+
+residence_sexually <- bind_rows(residence_unmet_need_SAUW, residence_met_need_SAUW, residence_total_SAUW) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(residence_sexually, "residence_sexually_active.csv")
+```
+
+```{r, include=FALSE}
+residence_sexually_active <- read.csv("residence_sexually_active.csv")
+my_table <- residence_sexually_active[residence_sexually_active$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+residence_sexually_active_visuals <- my_table2 %>% 
+  ggplot(aes(x = need, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="darkorange") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~residence) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Residence - Sexually Active Unmarried Women") + xlab("Residence") + ylab("Percentage")
+```
+
+```{r}
+residence_sexually_active_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+residence_percentage_sexually <- tables[[49]] %>%
+  slice(44:45) %>% 
+  select(V1, V12, V13) %>% 
+  rename(residence = V1, 
+                percentage_demand_satisfied = V12,
+         satisfied_by_modern = V13) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(residence_percentage_sexually, "residence_percentage_sexually.csv")
+```
+
+
+```{r, include=FALSE}
+#percentage visuals
+residence_percentage_sexually <- read.csv("residence_percentage_sexually.csv")
+
+residence_percentage_sexually_visuals <- residence_percentage_sexually %>% 
+  ggplot(aes(x=type, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~residence) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Sexually Active Unmarried Women Satisfied by FP Methods, by Residence")
+```
+
+```{r}
+residence_percentage_sexually_visuals
+```
+
+```{r, include=FALSE}
+#Education
+education_unmet_need_SAUW <- tables[[49]] %>%
+  slice(49:51) %>% 
+  select(V1:V4) %>% 
+  rename(education = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+education_met_need_SAUW <- tables[[49]] %>%
+  slice(49:51) %>% 
+  select(V1, V5:V7) %>% 
+  rename(education = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+education_total_SAUW <- tables[[49]] %>%
+  slice(49:51) %>% 
+  select(V1, V8:V10) %>% 
+  rename(education = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+education_sexually <- bind_rows(education_unmet_need_SAUW, education_met_need_SAUW, education_total_SAUW) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(education_sexually, "education_sexually_active.csv")
+```
+
+```{r, include=FALSE}
+education_sexually_active <- read.csv("education_sexually_active.csv")
+my_table <- education_sexually_active[education_sexually_active$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+education_sexually_active_visuals <- my_table2 %>% 
+  ggplot(aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold"), axis.text = element_text(face = "bold", size = rel(1.2))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Education - Sexually Active Unmarried Women") + xlab("Education Level") + ylab("Percentage")
+```
+
+```{r}
+education_sexually_active_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+education_percentage_sexually <- tables[[49]] %>%
+  slice(49:51) %>% 
+  select(V1, V12, V13) %>% 
+  rename(education = V1, 
+                percentage_demand_satisfied = V12,
+                percentage_demand_satisfied_by_modern = V13
+         )%>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(education_percentage_sexually, "education_percentage_sexually.csv")
+```
+
+```{r, include=FALSE}
+education_percentage_sexually <- read.csv("education_percentage_sexually.csv")
+
+education_percentage_sexually_visuals <- education_percentage_sexually %>% 
+  ggplot(aes(x=education, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Sexually Active Unmarried Women Satisfied by FP Methods, by Age")
+```
+
+```{r}
+education_percentage_sexually_visuals
+```
+
+
+```{r, include=FALSE}
+#WEALTH
+wealth_unmet_need_SAUW <- tables[[49]] %>%
+  slice(54:58) %>% 
+  select(V1:V4) %>% 
+  rename(wealth = V1,
+                For_spacing = V2,
+                For_limiting = V3, 
+                Total = V4
+         ) %>% mutate(need = "unmet_need")
+#meet need
+wealth_met_need_SAUW <- tables[[49]] %>%
+  slice(54:58) %>% 
+  select(V1, V5:V7) %>% 
+  rename(wealth = V1,
+                For_spacing = V5,
+                For_limiting = V6, 
+                Total = V7
+         ) %>% mutate(need = "met_need")
+#total
+wealth_total_SAUW <- tables[[49]] %>%
+  slice(54:58) %>% 
+  select(V1, V8:V10) %>% 
+  rename(wealth = V1,
+                For_spacing = V8,
+                For_limiting = V9, 
+                Total = V10
+         ) %>% mutate(need = "total_demand")
+#bind rows
+wealth_sexually_active <- bind_rows(wealth_unmet_need_SAUW, wealth_met_need_SAUW, wealth_total_SAUW) %>% 
+  gather(type, percentage, 2:4)
+
+write_csv(wealth_sexually_active, "wealth_sexually_active.csv")
+```
+
+```{r, include=FALSE}
+wealth_sexually_active <- read.csv("wealth_sexually_active.csv")
+my_table <- wealth_sexually_active[wealth_sexually_active$need != "total_demand", ]
+my_table2 <- my_table[my_table$type != "Total", ]
+
+wealth_sexually_active_visuals <- my_table2 %>% 
+  ggplot(aes(x = wealth, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_grid(type~need) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Need and Demand for FP by Wealth - Sexually Active Unmarried Women") + xlab("Wealth Quintile") + ylab("Percentage")
+```
+
+```{r}
+wealth_sexually_active_visuals
+```
+
+```{r, include=FALSE}
+#percentage of demand satisfied
+wealth_percentage_SAUW <- tables[[49]] %>%
+  slice(54:58) %>% 
+  select(V1, V12, V13) %>% 
+  rename(wealth = V1, 
+                percentage_demand_satisfied = V12,
+         satisfied_by_modern = V13
+         ) %>% 
+  gather(type, percentage, 2:3)
+# write csv
+write_csv(wealth_percentage_SAUW, "wealth_percentage_sexually.csv")
+```
+
+```{r, include=FALSE}
+wealth_percentage_sexually <- read.csv("wealth_percentage_sexually.csv")
+
+wealth_percentage_sexually_visuals <- wealth_percentage_sexually %>% 
+  ggplot(aes(x=wealth, y=percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "brown") +
+  facet_grid(~type) +
+  geom_text(aes(label = percentage), color = "white", hjust = 1.5) +
+  coord_flip() +
+  ggtitle("Sexually Active Unmarried Women Satisfied by FP Methods, by Wealth Quintile")
+```
+
+```{r}
+wealth_percentage_sexually_visuals
+```
+
+```{r, include=FALSE}
+decision_making_on_fp <- tables[[50]] %>%
+  slice(5:11) %>% 
+  select(V1, V2) %>% 
+  rename(decision_maker = V1, 
+                percentage = V2
+         ) 
+write_csv(decision_making_on_fp, "decision_making.csv")
+```
+
+```{r, include=FALSE}
+decision_making_family_planing <- read.csv("decision_making.csv")
+
+decision_making_family_planing_visuals <- decision_making_family_planing %>% 
+  ggplot(aes(x = decision_maker, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("Percentage") + xlab("Decison Maker") +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Decision-making-Family Planning") +
+  theme(plot.title = element_text(hjust = 0))
+decision_making_family_planing_visuals <- ggplotly(decision_making_family_planing_visuals, tooltip  = c("decision_maker", "percentage"))
+```
+
+```{r}
+decision_making_family_planing_visuals
+```
+
+```{r, include=FALSE}
+#age
+age_decision_making <- tables[[51]] %>%
+  slice(6:12) %>% 
+  select(V1:V5, V7) %>% 
+  rename(age = V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(age_decision_making, "fp_age_decision_making.csv")
+```
+
+```{r, include=FALSE}
+decision_making_age <- read.csv("fp_age_decision_making.csv")
+
+decision_making_age_visuals <- decision_making_age %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~type) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Age") + ylab("Percentage") +
+  ggtitle("Decision making about family planning  by Age")
+decision_making_age_visuals <- ggplotly(decision_making_age_visuals, tooltip = c("age", "percentage"))
+```
+
+```{r}
+decision_making_age_visuals
+```
+
+```{r, include=FALSE}
+#fp use
+fp_use_decision_making <- tables[[51]] %>%
+  slice(15:16) %>% 
+  select(V1:V5, V7) %>% 
+  rename(fp_use = V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(fp_use_decision_making, "fp_use_decision_making.csv")
+```
+
+```{r, include=FALSE}
+fp_use_decision_making <- read.csv("fp_use_decision_making.csv")
+
+fp_use_decision_making_visuals <- fp_use_decision_making %>% 
+  ggplot(aes(x = type, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~fp_use) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Family planning use") + ylab("Percentage") +
+  ggtitle("Decision-making - family planning  by Family Planning Use")
+fp_use_decision_making_visuals <- ggplotly(fp_use_decision_making_visuals, tooltip = c("type", "percentage"))
+```
+
+```{r}
+fp_use_decision_making_visuals
+```
+
+```{r, include=FALSE}
+#number of living children
+children_decision_making <- tables[[51]] %>%
+  slice(19:22) %>% 
+  select(V1:V5, V7) %>% 
+  rename(children = V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(children_decision_making, "children_decision_making.csv")
+```
+
+```{r, include=FALSE}
+children_decision_making <- read.csv("children_decision_making.csv")
+
+children_decision_making_visuals <- children_decision_making %>% 
+  ggplot(aes(x = type, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="darkorange") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~children) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Decision Maker") + ylab("Percentage") +
+  ggtitle("Decision making about family planning  by number of living children")
+children_decision_making_visuals <- ggplotly(children_decision_making_visuals, tooltip = c("type", "percentage"))
+```
+
+```{r}
+children_decision_making_visuals
+```
+
+```{r, include=FALSE}
+#residence
+residence_decision_making <- tables[[51]] %>%
+  slice(25:26) %>% 
+  select(V1:V5, V7) %>% 
+  rename(residence = V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(residence_decision_making, "residence_decision_making.csv")
+```
+
+```{r, include=FALSE}
+#visuals
+residence_decision_making <- read.csv("residence_decision_making.csv")
+
+residence_decision_making_visuals <- residence_decision_making %>% 
+  ggplot(aes(x = type, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~residence) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Residence") + ylab("Percentage") +
+  ggtitle("Decision making about family planning  by residence")
+residence_decision_making_visuals <- ggplotly(residence_decision_making_visuals, tooltip = c("type", "percentage"))
+```
+
+```{r}
+residence_decision_making_visuals
+```
+
+```{r, include=FALSE}
+#education
+education_decision_making <- tables[[51]] %>%
+  slice(29:32) %>% 
+  select(V1:V5, V7) %>% 
+  rename(education = V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(education_decision_making, "education_decision_making.csv")
+```
+
+```{r, include=FALSE}
+#visuals
+education_decision_making <- read.csv("education_decision_making.csv")
+
+education_decision_making_visuals <- education_decision_making %>% 
+  ggplot(aes(x = type, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~education) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Education Level") + ylab("Percentage") +
+  ggtitle("Decision making about family planning  by education level")
+education_decision_making_visuals <- ggplotly(education_decision_making_visuals, tooltip = c("type", "percentage"))
+```
+
+```{r}
+education_decision_making_visuals
+```
+
+```{r, include=FALSE}
+#wealth
+wealth_decision_making <- tables[[51]] %>%
+  slice(35:39) %>% 
+  select(V1:V5, V7) %>% 
+  rename(wealth= V1,
+                mainly_wife = V2,
+                partner_jointly = V3, 
+                mainly_husband = V4,
+         other = V5,
+         percentage_participated = V7
+         ) %>% 
+  gather(type, percentage, 2:6)
+write_csv(wealth_decision_making, "wealth_decision_making.csv")
+```
+
+```{r, include=FALSE}
+wealth_decision_making <- read.csv("wealth_decision_making.csv")
+
+wealth_decision_making_visuals <- wealth_decision_making %>% 
+  ggplot(aes(x = type, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~wealth) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 14, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold"), axis.text = element_text(face = "bold", size = rel(1.3))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Wealth Quintile") + ylab("Percentage") +
+  ggtitle("Decision making about family planning  by wealth quintile")
+wealth_decision_making_visuals <- ggplotly(wealth_decision_making_visuals, tooltip = c("type", "percentage"))
+```
+
+```{r}
+wealth_decision_making_visuals
+```
+
+```{r, include=FALSE}
+future_use_of_contraception <- tables[[53]] %>%
+  slice(6:9) %>% 
+  select(V1:V7) %>% 
+  rename(intention = V1,
+                no_children = V2,
+                one_child = V3, 
+                two_children = V4,
+          three_children = V5,
+         more_than_four = V6,
+         total = V7
+         ) %>% 
+  gather(children, percentage, 2:7)
+write_csv(future_use_of_contraception, "future_use_of_contraception.csv")
+```
+
+```{r, include=FALSE}
+future_use_of_contraception <- read.csv("future_use_of_contraception.csv")
+
+future_use_of_contraception_visuals <- future_use_of_contraception %>% 
+  ggplot(aes(x = intention, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~children) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  xlab("Intention to use") + ylab("Percentage") +
+  ggtitle("Future use of Contraception")
+future_use_of_contraception_visuals <- ggplotly(future_use_of_contraception_visuals, tooltip = c("intention", "percentage"))
+```
+
+```{r}
+future_use_of_contraception_visuals
+```
+
+```{r, include=FALSE}
+#age
+age_exposure_fp_message <- tables[[54]] %>%
+  slice(6:12) %>% 
+  select(V1:V12) %>% 
+  rename(age = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           events = V9,
+           friends = V10,
+           internet = V11,
+           none = V12
+         ) %>% 
+  gather(media, percentage, 2:12)
+write_csv(age_exposure_fp_message, "age_exposure.csv")
+```
+
+```{r, include=FALSE}
+age_exposure <- read.csv("age_exposure.csv")
+
+age_exposure_visuals <- age_exposure %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Women Exposure to Family Planning Messages, by Age") + xlab("Age") + ylab("Percentage")
+age_exposure_visuals <- ggplotly(age_exposure_visuals, tooltip = c("age", "percentage"))
+```
+
+```{r}
+age_exposure_visuals
+```
+
+```{r, include=FALSE}
+#residence
+residence_exposure_fp_message <- tables[[54]] %>%
+  slice(15:16) %>% 
+  select(V1:V12) %>% 
+  rename(residence = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           events = V9,
+           friends = V10,
+           internet = V11,
+           none = V12
+         ) %>% 
+  gather(media, percentage, 2:12)
+write_csv(residence_exposure_fp_message, "residence_exposure.csv")
+```
+
+```{r, include=FALSE}
+residence_exposure <- read.csv("residence_exposure.csv")
+
+residence_exposure_visuals <- residence_exposure %>% 
+  ggplot(aes(x = residence, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Women Exposure to Family Planning Messages, by Residence") + xlab("Residence") + ylab("Percentage")
+residence_exposure_visuals <- ggplotly(residence_exposure_visuals, tooltip = c("residence", "percentage"))
+```
+
+```{r}
+residence_exposure_visuals
+```
+
+```{r, include=FALSE}
+#education
+education_exposure_fp_message <- tables[[54]] %>%
+  slice(19:22) %>% 
+  select(V1:V12) %>% 
+  rename(education = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           events = V9,
+           friends = V10,
+           internet = V11,
+           none = V12
+         ) %>% 
+  gather(media, percentage, 2:12)
+write_csv(education_exposure_fp_message, "education_exposure.csv")
+```
+
+```{r, include=FALSE}
+#visuals
+education_exposure <- read.csv("education_exposure.csv")
+
+education_exposure_visuals <- education_exposure %>% 
+  ggplot(aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Women Exposure to Family Planning Messages, by Education") + xlab("Education Level") + ylab("Percentage")
+education_exposure_visuals <- ggplotly(education_exposure_visuals, tooltip = c("education", "percentage"))
+```
+
+```{r}
+education_exposure_visuals
+```
+
+```{r, include=FALSE}
+#wealth
+wealth_exposure_fp_message <- tables[[54]] %>%
+  slice(25:29) %>% 
+  select(V1:V12) %>% 
+  rename(wealth = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           events = V9,
+           friends = V10,
+           internet = V11,
+           none = V12
+         ) %>% 
+  gather(media, percentage, 2:12)
+write_csv(wealth_exposure_fp_message, "wealth_exposure.csv")
+```
+
+```{r, include=FALSE}
+#visuals
+wealth_exposure <- read.csv("wealth_exposure.csv")
+
+wealth_exposure_visuals <- wealth_exposure %>% 
+  ggplot(aes(x = wealth, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Women Exposure to Family Planning Messages, by Wealth") + xlab("Wealth Quintile") + ylab("Percentage")
+wealth_exposure_visuals <- ggplotly(wealth_exposure_visuals, tooltip = c("wealth", "percentage"))
+```
+
+```{r}
+wealth_exposure_visuals
+```
+
+```{r, include=FALSE}
+#age
+men_age_exposure_fp_message <- tables[[55]] %>%
+  slice(6:12) %>% 
+  select(V1:V11) %>% 
+  rename(age = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           friends = V9,
+           internet = V10,
+           none = V11
+         ) %>% 
+  gather(media, percentage, 2:11)
+write_csv(men_age_exposure_fp_message, "age_men_exposure.csv")
+```
+
+```{r, include=FALSE}
+age_men_exposure <- read.csv("age_men_exposure.csv")
+
+age_men_exposure_visuals <- age_men_exposure %>% 
+  ggplot(aes(x = age, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white")) +
+  ggtitle("Men Exposure to Family Planning Messages, by Age") + xlab("Age") + ylab("Percentage")
+age_men_exposure_visuals <- ggplotly(age_men_exposure_visuals, tooltip = c("age", "percentage"))
+```
+
+```{r}
+age_men_exposure_visuals
+```
+
+```{r, include=FALSE}
+#residence
+men_residence_exposure_fp_message <- tables[[55]] %>%
+  slice(15:16) %>% 
+  select(V1:V11) %>% 
+  rename(residence = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           friends = V9,
+           internet = V10,
+           none = V11
+         ) %>% 
+  gather(media, percentage, 2:11)
+write_csv(men_residence_exposure_fp_message, "residence_men_exposure.csv")
+```
+
+```{r, include=FALSE}
+residence_men_exposure <- read.csv("residence_men_exposure.csv")
+
+residence_men_exposure_visuals <- residence_men_exposure %>% 
+  ggplot(aes(x = residence, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white"))  +
+  ggtitle("Men Exposure to Family Planning Messages, by Residence") + xlab("Residence") + ylab("Percentage")
+residence_men_exposure_visuals <- ggplotly(residence_men_exposure_visuals, tooltip = c("residence", "percentage"))
+```
+
+```{r}
+residence_men_exposure_visuals
+```
+
+```{r, include=FALSE}
+#education
+men_education_exposure_fp_message <- tables[[55]] %>%
+  slice(19:22) %>% 
+  select(V1:V11) %>% 
+  rename(education = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           friends = V9,
+           internet = V10,
+           none = V11
+         ) %>% 
+  gather(media, percentage, 2:11)
+write_csv(men_education_exposure_fp_message, "education_men_exposure.csv")
+```
+
+```{r, include=FALSE}
+education_men_exposure <- read.csv("education_men_exposure.csv")
+
+education_men_exposure_visuals <- education_men_exposure %>% 
+  ggplot(aes(x = education, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 12, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=14, face="bold"), axis.text = element_text(face = "bold", size = rel(1))) +
+  theme(strip.background =element_rect(fill="white"))  +
+  ggtitle("Men Exposure to Family Planning Messages, by Residence") + xlab("Residence") + ylab("Percentage")
+education_men_exposure_visuals <- ggplotly(education_men_exposure_visuals, tooltip = c("education", "percentage"))
+```
+
+```{r}
+education_men_exposure_visuals
+```
+
+```{r, include=FALSE}
+#wealth
+men_wealth_exposure_fp_message <- tables[[55]] %>%
+  slice(25:29) %>% 
+  select(V1:V11) %>% 
+  rename(wealth = V1,
+          radio = V2,
+          television = V3, 
+          newspaper = V4,
+           mobile = V5,
+           social_media = V6,
+           poster = V7,
+           billboard = V8,
+           friends = V9,
+           internet = V10,
+           none = V11
+         ) %>% 
+  gather(media, percentage, 2:11)
+write_csv(men_wealth_exposure_fp_message, "wealth_men_exposure.csv")
+```
+
+```{r, include=FALSE}
+wealth_men_exposure <- read.csv("wealth_men_exposure.csv")
+
+wealth_men_exposure_visuals <- wealth_men_exposure %>% 
+  ggplot(aes(x = wealth, y = percentage)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill="#e28743") +
+  theme_bw() +
+  geom_text(aes(label=percentage), hjust=1.5, size=3, color="black") +
+  coord_flip() +
+  ylab("") + xlab("") +
+  facet_wrap(~media) +
+  theme(strip.text.x = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(strip.text.y = element_text(size = 16, colour = "black", face = "bold")) +
+  theme(axis.title=element_text(size=18, face="bold"), axis.text = element_text(face = "bold", size = rel(1.5))) +
+  theme(strip.background =element_rect(fill="white"))  +
+  ggtitle("Men Exposure to Family Planning Messages, by Wealth") + xlab("Wealth Quintile") + ylab("Percentage")
+wealth_men_exposure_visuals <- ggplotly(wealth_men_exposure_visuals, tooltip = c("wealth", "percentage"))
+```
+
+```{r}
+wealth_men_exposure_visuals
+```
+
